@@ -1,11 +1,11 @@
-# Movie App (MEVN, Vuetify, Tailwind, Particles.js)
+# Movie App MEVN
 
 ## Features
 
 - Movie list, details, search, comments
 - Paginated director and actor lists
 - Clean, dark, responsive UI with animated backgrounds
-- Built with Vue 3, Vuetify, TailwindCSS, Particles.js, Express, MongoDB
+- Built with Vue 3, Express, MongoDB
 
 ## Setup
 
