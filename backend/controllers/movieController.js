@@ -24,7 +24,6 @@ exports.searchMovies = async (req,res) => {
     res.json(movies); 
 };
 
-// controllers/movieController.js
 exports.autocompleteMovies = async (req, res) => {
   const { q } = req.query;
   if (!q) return res.json([]);
