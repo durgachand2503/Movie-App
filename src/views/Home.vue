@@ -6,17 +6,25 @@
       placeholder="Search movies..."
       style="width: 100%; margin-bottom: 1rem;"
       @input="onInput"
+      @keydown.enter.prevent="onSearch"
       @focus="showSuggestions = true"
       @blur="hideSuggestions"
       autocomplete="off"
     />
     <ul v-if="showSuggestions && suggestions.length" class="autocomplete-list">
-      <li v-for="movie in suggestions" :key="movie._id" @mousedown.prevent="selectSuggestion(movie)">
+      <li
+        v-for="movie in suggestions"
+        :key="movie._id"
+        @mousedown.prevent="selectSuggestion(movie)"
+      >
         {{ movie.title }}
       </li>
     </ul>
     <MovieList :movies="movies" />
-    <div style="display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: 1.5rem;">
+    <div
+      style="display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: 1.5rem;"
+      v-if="!isSearching"
+    >
       <button @click="prevPage" :disabled="page === 1">Prev</button>
       <span style="font-weight: bold;">Page {{ page }}</span>
       <button @click="nextPage" :disabled="!hasNextPage">Next</button>
@@ -26,7 +34,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { fetchMovies, autocompleteMovies } from '../services/api';
+import { fetchMovies, searchMovies, autocompleteMovies } from '../services/api';
 import MovieList from '../components/MovieList.vue';
 
 const movies = ref([]);
@@ -34,21 +42,46 @@ const page = ref(1);
 const search = ref('');
 const suggestions = ref([]);
 const showSuggestions = ref(false);
+const isSearching = ref(false);
 
 const pageSize = 10;
 const hasNextPage = ref(true);
 
 const loadMovies = async () => {
+  isSearching.value = false;
   const res = await fetchMovies(page.value);
   movies.value = res.data;
   hasNextPage.value = res.data.length === pageSize;
 };
 
+const onInput = async () => {
+  if (search.value.trim().length < 1) {
+    suggestions.value = [];
+    loadMovies();
+    return;
+  }
+  const res = await autocompleteMovies(search.value);
+  suggestions.value = res.data;
+  showSuggestions.value = true;
+};
+
+const onSearch = async () => {
+  if (search.value.trim().length < 1) {
+    page.value = 1;
+    loadMovies();
+    return;
+  }
+  const res = await searchMovies(search.value);
+  movies.value = res.data;
+  isSearching.value = true;
+  hasNextPage.value = false;
+  suggestions.value = [];
+  showSuggestions.value = false;
+};
 
 const selectSuggestion = (movie) => {
   search.value = movie.title;
   suggestions.value = [];
-  movies.value = [movie];
   showSuggestions.value = false;
   onSearch();
 };
@@ -64,8 +97,10 @@ const prevPage = () => {
   }
 };
 const nextPage = () => {
-  page.value++;
-  loadMovies();
+  if (hasNextPage.value) {
+    page.value++;
+    loadMovies();
+  }
 };
 
 onMounted(loadMovies);
