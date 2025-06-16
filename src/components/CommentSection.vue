@@ -5,10 +5,8 @@
       <span class="comment-count" v-if="comments.length > 0">({{ comments.length }})</span>
     </h3>
 
-    <!-- Comment Form -->
     <form @submit.prevent="submitComment" class="comment-form">
       <div class="form-grid">
-        <!-- Name Input -->
         <input
           v-model="form.name"
           type="text"
@@ -17,7 +15,6 @@
           class="form-input"
         />
 
-        <!-- Email Input -->
         <input
           v-model="form.email"
           type="email"
@@ -26,7 +23,6 @@
           class="form-input"
         />
 
-        <!-- Comment Textarea -->
         <textarea
           v-model="form.text"
           placeholder="Share your thoughts about this movie..."
@@ -35,7 +31,6 @@
           class="form-textarea"
         ></textarea>
 
-        <!-- Submit Button -->
         <button
           type="submit"
           :disabled="loading"
@@ -52,7 +47,6 @@
       </div>
     </form>
 
-    <!-- Comment List -->
     <div class="comments-list" v-if="comments.length > 0">
       <div
         v-for="comment in comments"
@@ -72,13 +66,54 @@
       </div>
     </div>
 
-    <!-- Empty State -->
     <div v-else class="empty-state">
       <div class="empty-icon">🎬</div>
       <p class="empty-text">No comments yet. Be the first to comment!</p>
     </div>
   </div>
 </template>
+
+<script setup>
+import { ref, onMounted, watch } from 'vue';
+import { fetchComments, addComment } from '../services/api';
+
+const props = defineProps({ movieId: String });
+
+const comments = ref([]);
+const form = ref({ name: '', email: '', text: '' });
+const loading = ref(false);
+
+const loadComments = async () => {
+  try {
+    const res = await fetchComments(props.movieId);
+    comments.value = res.data;
+  } catch (error) {
+    console.error('Failed to load comments:', error);
+  }
+};
+
+const submitComment = async () => {
+  try {
+    loading.value = true;
+    await addComment(props.movieId, form.value);
+    form.value = { name: '', email: '', text: '' };
+    await loadComments();
+  } catch (error) {
+    console.error('Error submitting comment:', error);
+  } finally {
+    loading.value = false;
+  }
+};
+
+const formatDate = (date) =>
+  new Date(date).toLocaleString('en-IN', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
+
+onMounted(loadComments);
+watch(() => props.movieId, loadComments);
+</script>
 
 <style scoped>
 .comment-section {
@@ -286,7 +321,6 @@
   margin: 0;
 }
 
-/* Mobile responsiveness */
 @media (max-width: 767px) {
   .comment-section {
     padding: 1.25rem;
@@ -308,45 +342,3 @@
   }
 }
 </style>
-
-<script setup>
-import { ref, onMounted, watch } from 'vue';
-import { fetchComments, addComment } from '../services/api';
-
-const props = defineProps({ movieId: String });
-
-const comments = ref([]);
-const form = ref({ name: '', email: '', text: '' });
-const loading = ref(false);
-
-const loadComments = async () => {
-  try {
-    const res = await fetchComments(props.movieId);
-    comments.value = res.data;
-  } catch (error) {
-    console.error('Failed to load comments:', error);
-  }
-};
-
-const submitComment = async () => {
-  try {
-    loading.value = true;
-    await addComment(props.movieId, form.value);
-    form.value = { name: '', email: '', text: '' };
-    await loadComments();
-  } catch (error) {
-    console.error('Error submitting comment:', error);
-  } finally {
-    loading.value = false;
-  }
-};
-
-const formatDate = (date) =>
-  new Date(date).toLocaleString('en-IN', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  });
-
-onMounted(loadComments);
-watch(() => props.movieId, loadComments);
-</script>
